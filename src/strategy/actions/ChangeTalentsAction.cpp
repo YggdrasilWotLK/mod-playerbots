@@ -29,19 +29,21 @@ bool ChangeTalentsAction::Execute(Event event)
             if (param.find("switch 1") != std::string::npos)
             {
                 bot->ActivateSpec(0);
-                out << "Active first talent";
+                out << "Activing primary talents.";
                 botAI->ResetStrategies();
             }
             else if (param.find("switch 2") != std::string::npos)
             {
-                if (bot->GetSpecsCount() == 1 && bot->GetLevel() >= sWorld->getIntConfig(CONFIG_MIN_DUALSPEC_LEVEL))
+                if (bot->GetSpecsCount() == 1)
                 {
-                    bot->CastSpell(bot, 63680, true, nullptr, nullptr, bot->GetGUID());
-                    bot->CastSpell(bot, 63624, true, nullptr, nullptr, bot->GetGUID());
+                    out << "You need to purchase dual specialization on this character before your shadow can use its secondary talents.";
                 }
-                bot->ActivateSpec(1);
-                out << "Active second talent";
-                botAI->ResetStrategies();
+                if (bot->GetSpecsCount() == 2)
+                {
+                    bot->ActivateSpec(1);
+                    out << "Activating second talent";
+                    botAI->ResetStrategies();
+                }
             }
         }
         else if (param.find("autopick") != std::string::npos)
