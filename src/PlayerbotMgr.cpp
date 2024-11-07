@@ -657,25 +657,26 @@ std::string const PlayerbotHolder::ProcessBotCommand(std::string const cmd, Obje
     if (cmd == "add" || cmd == "login")
     {
         if (ObjectAccessor::FindPlayer(guid))
-            return "player already logged in";
+            return "Player already logged in.";
 
         if (!sPlayerbotAIConfig->allowPlayerBots && !isRandomAccount && !isMasterAccount)
             return "You cannot login another player's character as bot.";
 
         AddPlayerBot(guid, masterAccountId);
-        return "ok";
+        return "Login successful.";
     }
     else if (cmd == "remove" || cmd == "logout" || cmd == "rm")
     {
         if (!ObjectAccessor::FindPlayer(guid))
-            return "player is offline";
+            return "Character is already offline.";
 
         if (!GetPlayerBot(guid))
-            return "not your bot";
+            return "Not your shadow!";
 
         LogoutPlayerBot(guid);
-        return "ok";
+        return "Logout successful.";
     }
+
 
     // if (admin)
     // {
@@ -684,11 +685,11 @@ std::string const PlayerbotHolder::ProcessBotCommand(std::string const cmd, Obje
         bot = sRandomPlayerbotMgr->GetPlayerBot(guid);
 
     if (!bot)
-        return "bot not found";
+        return "Shadow not found.";
 
     if (!isRandomAccount || isRandomBot)
     {
-        return "ERROR: You can not use this command on non-summoned random bot.";
+        return "ERROR: You can not use this command on non-summoned random shadows.";
     }
 
     if (!admin)
