@@ -1631,7 +1631,7 @@ void PlayerbotAI::ApplyInstanceStrategies(uint32 mapId, bool tellMaster)
     if (tellMaster && !strategyName.empty())
     {
         std::ostringstream out;
-        out << "Add " << strategyName << " instance strategy";
+        out << "Loading " << strategyName << " instance strategy.";
         TellMasterNoFacing(out.str());
     }
 }
