@@ -636,30 +636,19 @@ void PlayerbotHolder::OnBotLogin(Player* const bot)
 }
 
 std::string const PlayerbotHolder::ProcessBotCommand(std::string const cmd, ObjectGuid guid, ObjectGuid masterguid,
-                                                     bool admin, uint32 masterAccountId, uint32 masterGuildId)
+                                                     bool admin, uint32 masterAccountId, uint32 /*masterGuildId*/)
 {
     if (!sPlayerbotAIConfig->enabled || guid.IsEmpty())
         return "bot system is disabled";
 
-    uint32 botAccount = sCharacterCache->GetCharacterAccountIdByGuid(guid);
     bool isRandomBot = sRandomPlayerbotMgr->IsRandomBot(guid.GetCounter());
-    bool isRandomAccount = sPlayerbotAIConfig->IsInRandomAccountList(botAccount);
-    bool isMasterAccount = (masterAccountId == botAccount);
-
-    if (!isRandomAccount && !isMasterAccount && !admin && masterguid)
-    {
-        Player* master = ObjectAccessor::FindConnectedPlayer(masterguid);
-        if (master && (!sPlayerbotAIConfig->allowGuildBots || !masterGuildId ||
-                       (masterGuildId && sCharacterCache->GetCharacterGuildIdByGuid(guid) != masterGuildId)))
-            return "not in your guild or account";
-    }
 
     if (cmd == "add" || cmd == "login")
     {
         if (ObjectAccessor::FindPlayer(guid))
             return "Player already logged in.";
 
-        if (!sPlayerbotAIConfig->allowPlayerBots && !isRandomAccount && !isMasterAccount)
+        if (!sPlayerbotAIConfig->allowPlayerBots)
             return "You cannot login another player's character as bot.";
 
         AddPlayerBot(guid, masterAccountId);
@@ -671,25 +660,22 @@ std::string const PlayerbotHolder::ProcessBotCommand(std::string const cmd, Obje
             return "Character is already offline.";
 
         if (!GetPlayerBot(guid))
-            return "Not your shadow!";
+            return "Not your bot!";
 
         LogoutPlayerBot(guid);
         return "Logout successful.";
     }
 
-
-    // if (admin)
-    // {
     Player* bot = GetPlayerBot(guid);
     if (!bot)
         bot = sRandomPlayerbotMgr->GetPlayerBot(guid);
 
     if (!bot)
-        return "Shadow not found.";
+        return "Bot not found.";
 
-    if (!isRandomAccount || isRandomBot)
+    if (isRandomBot)
     {
-        return "ERROR: You can not use this command on non-summoned random shadows.";
+        return "ERROR: You can not use this command on non-summoned random bot.";
     }
 
     if (!admin)
@@ -759,8 +745,7 @@ std::string const PlayerbotHolder::ProcessBotCommand(std::string const cmd, Obje
         }
 
         if (cmd == "refresh=raid")
-        {  // TODO: This function is not perfect yet. If you are already in a raid,
-            // after the command is executed, the AI ​​needs to go back online or exit the raid and re-enter.
+        {
             PlayerbotFactory factory(bot, bot->GetLevel());
             factory.UnbindInstance();
             return "ok";
@@ -790,7 +775,6 @@ std::string const PlayerbotHolder::ProcessBotCommand(std::string const cmd, Obje
         factory.InitInstanceQuests();
         return "Initialization quests";
     }
-    // }
 
     return "unknown command";
 }
@@ -1139,33 +1123,39 @@ std::vector<std::string> PlayerbotHolder::HandlePlayerbotCommand(char const* arg
     for (std::vector<std::string>::iterator i = chars.begin(); i != chars.end(); i++)
     {
         std::string const s = *i;
-
-        uint32 accountId = GetAccountId(s);
-        if (!accountId)
+        
+        if (sPlayerbotAIConfig->allowGuildBots)
         {
-            bots.insert(s);
-            continue;
-        }
-
-        QueryResult results = CharacterDatabase.Query("SELECT name FROM characters WHERE account = {}", accountId);
-        if (results)
-        {
-            do
+            // Original account-first logic
+            uint32 accountId = GetAccountId(s);
+            if (!accountId)
             {
-                Field* fields = results->Fetch();
-                std::string const charName = fields[0].Get<std::string>();
-                bots.insert(charName);
-            } while (results->NextRow());
+                bots.insert(s);
+                continue;
+            }
+            QueryResult results = CharacterDatabase.Query("SELECT name FROM characters WHERE account = {}", accountId);
+            if (results)
+            {
+                do
+                {
+                    Field* fields = results->Fetch();
+                    std::string const charName = fields[0].Get<std::string>();
+                    bots.insert(charName);
+                } while (results->NextRow());
+            }
+        }
+        else
+        {
+            // Character-only logic
+            bots.insert(s);
         }
     }
 
     for (auto i = bots.begin(); i != bots.end(); ++i)
     {
         std::string const bot = *i;
-
         std::ostringstream out;
         out << cmdStr << ": " << bot << " - ";
-
         ObjectGuid member = sCharacterCache->GetCharacterGuidByName(bot);
         if (!member)
         {
@@ -1181,7 +1171,6 @@ std::vector<std::string> PlayerbotHolder::HandlePlayerbotCommand(char const* arg
         {
             out << ProcessBotCommand(cmdStr, member, ObjectGuid::Empty, true, -1, -1);
         }
-
         messages.push_back(out.str());
     }
 
