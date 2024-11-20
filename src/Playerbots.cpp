@@ -97,16 +97,6 @@ public:
         {
             sPlayerbotsMgr->AddPlayerbotData(player, false);
             sRandomPlayerbotMgr->OnPlayerLogin(player);
-
-            if (sPlayerbotAIConfig->enabled || sPlayerbotAIConfig->randomBotAutologin)
-            {
-                std::string roundedTime =
-                    std::to_string(std::ceil((sPlayerbotAIConfig->maxRandomBots * 0.13 / 60) * 10) / 10.0);
-                roundedTime = roundedTime.substr(0, roundedTime.find('.') + 2);
-
-                ChatHandler(player->GetSession()).SendSysMessage(
-                    "Playerbots: bot initialization at server startup will require '" + roundedTime + "' minutes.");
-            }
         }
     }
 
