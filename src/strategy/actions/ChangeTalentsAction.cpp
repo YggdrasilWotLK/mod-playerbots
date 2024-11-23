@@ -41,7 +41,7 @@ bool ChangeTalentsAction::Execute(Event event)
                 if (bot->GetSpecsCount() == 2)
                 {
                     bot->ActivateSpec(1);
-                    out << "Activating seconddary talents.";
+                    out << "Activating secondary talents.";
                     botAI->ResetStrategies();
                 }
             }
