@@ -4585,7 +4585,16 @@ void PlayerbotAI::_fillGearScoreData(Player* player, Item* item, std::vector<uin
         return;
 
     uint8 type = proto->InventoryType;
-    uint32 level = mixed ? proto->ItemLevel * PlayerbotAI::GetItemScoreMultiplier(ItemQualities(proto->Quality)) : proto->ItemLevel;
+
+    uint32 level;
+    if (proto->Quality == ITEM_QUALITY_HEIRLOOM)
+    {
+       level = 2.3375 * player->GetLevel();
+    }
+    else 
+    {
+       level = mixed ? proto->ItemLevel * PlayerbotAI::GetItemScoreMultiplier(ItemQualities(proto->Quality)) : proto->ItemLevel;
+    }
 
     switch (type)
     {
