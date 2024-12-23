@@ -10,8 +10,8 @@
 #include "LootObjectStack.h"
 #include "Playerbots.h"
 #include "PossibleRpgTargetsValue.h"
-#include "ServerFacade.h"
 #include "PvpTriggers.h"
+#include "ServerFacade.h"
 
 bool AttackEnemyPlayerAction::isUseful()
 {
@@ -49,8 +49,15 @@ bool AttackAnythingAction::isUseful()
         return false;
 
     std::string const name = std::string(target->GetName());
-    if (!name.empty() && name.find("Dummy") != std::string::npos)  // Target is not a targetdummy
-        return false;
+    // Check for invalid targets: Dummy, Charge Target, Melee Target, Ranged Target
+    if (!name.empty() &&
+        (name.find("Dummy") != std::string::npos ||
+         name.find("Charge Target") != std::string::npos ||
+         name.find("Melee Target") != std::string::npos ||
+         name.find("Ranged Target") != std::string::npos))
+    {
+        return false;  // Target is one of the disallowed types
+    }
 
     // if (!ChooseRpgTargetAction::isFollowValid(bot, target))                               //Do not grind mobs far
     // away from master.
@@ -125,6 +132,36 @@ bool AttackAnythingAction::isPossible() { return AttackAction::isPossible() && G
 bool DpsAssistAction::isUseful()
 {
     if (PlayerHasFlag::IsCapturingFlag(bot))
+        return false;
+
+    return true;
+}
+
+bool AttackRtiTargetAction::Execute(Event event)
+{
+    Unit* rtiTarget = AI_VALUE(Unit*, "rti target");
+
+    if (rtiTarget && rtiTarget->IsInWorld() && rtiTarget->GetMapId() == bot->GetMapId())
+    {
+        botAI->GetAiObjectContext()->GetValue<GuidVector>("prioritized targets")->Set({rtiTarget->GetGUID()});
+        bool result = Attack(botAI->GetUnit(rtiTarget->GetGUID()));
+        if (result)
+        {
+            context->GetValue<ObjectGuid>("pull target")->Set(rtiTarget->GetGUID());
+            return true;
+        }
+    }
+    else
+    {
+        botAI->TellError("I dont see my rti attack target");
+    }
+
+    return false;
+}
+
+bool AttackRtiTargetAction::isUseful()
+{
+    if (botAI->ContainsStrategy(STRATEGY_TYPE_HEAL))
         return false;
 
     return true;

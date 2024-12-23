@@ -29,6 +29,7 @@
 #include "MotionMaster.h"
 #include "MoveSpline.h"
 #include "MoveSplineInit.h"
+#include "NewRpgStrategy.h"
 #include "ObjectGuid.h"
 #include "PerformanceMonitor.h"
 #include "Player.h"
@@ -38,6 +39,7 @@
 #include "Playerbots.h"
 #include "PointMovementGenerator.h"
 #include "PositionValue.h"
+#include "RandomPlayerbotMgr.h"
 #include "SayAction.h"
 #include "ScriptMgr.h"
 #include "ServerFacade.h"
@@ -718,7 +720,7 @@ void PlayerbotAI::HandleTeleportAck()
         // SetNextCheckDelay(urand(2000, 5000));
         if (sPlayerbotAIConfig->applyInstanceStrategies)
             ApplyInstanceStrategies(bot->GetMapId(), true);
-        Reset();
+        Reset(true);
     }
 
     SetNextCheckDelay(sPlayerbotAIConfig->globalCoolDown);
@@ -767,14 +769,15 @@ void PlayerbotAI::Reset(bool full)
             ->setTarget(sTravelMgr->nullTravelDestination, sTravelMgr->nullWorldPosition, true);
         aiObjectContext->GetValue<TravelTarget*>("travel target")->Get()->setStatus(TRAVEL_STATUS_EXPIRED);
         aiObjectContext->GetValue<TravelTarget*>("travel target")->Get()->setExpireIn(1000);
+        rpgInfo = NewRpgInfo();
     }
 
     aiObjectContext->GetValue<GuidSet&>("ignore rpg target")->Get().clear();
 
     bot->GetMotionMaster()->Clear();
-    // bot->CleanupAfterTaxiFlight();
-    InterruptSpell();
 
+    InterruptSpell();
+    
     if (full)
     {
         for (uint8 i = 0; i < BOT_STATE_MAX; i++)
@@ -1602,6 +1605,12 @@ void PlayerbotAI::ApplyInstanceStrategies(uint32 mapId, bool tellMaster)
             break;
         case 608:
             strategyName = "wotlk-vh";      // Violet Hold
+            break;
+        case 615:
+            strategyName = "wotlk-os";      // Obsidian Sanctum
+            break;
+        case 616:
+            strategyName = "wotlk-eoe";     // Eye Of Eternity
             break;
         case 619:
             strategyName = "wotlk-ok";      // Ahn'kahet: The Old Kingdom
@@ -4105,20 +4114,11 @@ inline bool ZoneHasRealPlayers(Player* bot)
     {
         return false;
     }
-
-    Map::PlayerList const& players = bot->GetMap()->GetPlayers();
-    if (players.IsEmpty())
+    
+    for (auto& player : sRandomPlayerbotMgr->GetPlayers())
     {
-        return false;
-    }
-
-    for (auto const& itr : players)
-    {
-        Player* player = itr.GetSource();
-        if (!player || !player->IsVisible())
-        {
+        if (player->GetMapId() != bot->GetMapId())
             continue;
-        }
 
         if (player->GetZoneId() == bot->GetZoneId())
         {
@@ -4135,6 +4135,21 @@ inline bool ZoneHasRealPlayers(Player* bot)
 
 bool PlayerbotAI::AllowActive(ActivityType activityType)
 {
+    // when botActiveAlone is 100% and smartScale disabled
+    if (sPlayerbotAIConfig->botActiveAlone >= 100 && !sPlayerbotAIConfig->botActiveAloneSmartScale)
+    {
+        return true;
+    }
+
+    // Is in combat. Always defend yourself.
+    if (activityType != OUT_OF_PARTY_ACTIVITY && activityType != PACKET_ACTIVITY)
+    {
+        if (bot->IsInCombat())
+        {
+            return true;
+        }
+    }
+    
     // only keep updating till initializing time has completed,
     // which prevents unneeded expensive GameTime calls.
     if (_isBotInitializing)
@@ -4159,30 +4174,42 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
     {
         return true;
     }
-
-    // Is in combat. Defend yourself.
-    if (activityType != OUT_OF_PARTY_ACTIVITY && activityType != PACKET_ACTIVITY)
+    
+    // bot map has active players.
+    if (sPlayerbotAIConfig->BotActiveAloneForceWhenInMap)
     {
-        if (bot->IsInCombat())
+        if (HasRealPlayers(bot->GetMap()))
         {
             return true;
         }
     }
 
     // bot zone has active players.
-    if (ZoneHasRealPlayers(bot))
+    if (sPlayerbotAIConfig->BotActiveAloneForceWhenInZone)
     {
-        return true;
+        if (ZoneHasRealPlayers(bot))
+        {
+            return true;
+        }
     }
 
     // when in real guild
-    if (IsInRealGuild())
+    if (sPlayerbotAIConfig->BotActiveAloneForceWhenInGuild)
+    {
+        if (IsInRealGuild())
+        {
+            return true;
+        }
+    }
+
+    // Player is near. Always active.
+    if (HasPlayerNearby(sPlayerbotAIConfig->BotActiveAloneForceWhenInRadius))
     {
         return true;
     }
 
     // Has player master. Always active.
-    if (GetMaster())  
+    if (GetMaster())
     {
         PlayerbotAI* masterBotAI = GET_PLAYERBOT_AI(GetMaster());
         if (!masterBotAI || masterBotAI->IsRealPlayer())
@@ -4250,30 +4277,27 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
         return true;
     }
 
-    // Player is near. Always active.
-    if (HasPlayerNearby(300.f))
-    {
-        return true;
-    }
-
     // HasFriend
-    for (auto& player : sRandomPlayerbotMgr->GetPlayers())
+    if (sPlayerbotAIConfig->BotActiveAloneForceWhenIsFriend)
     {
-        if (!player || !player->IsInWorld() || !player->GetSocial() || !bot->GetGUID())
+        for (auto& player : sRandomPlayerbotMgr->GetPlayers())
         {
-            continue;
-        }
+            if (!player || !player->IsInWorld() || !player->GetSocial() || !bot->GetGUID())
+            {
+                continue;
+            }
 
-        if (player->GetSocial()->HasFriend(bot->GetGUID()))
-        {
-            return true;
+            if (player->GetSocial()->HasFriend(bot->GetGUID()))
+            {
+                return true;
+            }
         }
     }
 
     // Force the bots to spread
     if (activityType == OUT_OF_PARTY_ACTIVITY || activityType == GRIND_ACTIVITY)
     {
-        if (HasManyPlayersNearby(10, sPlayerbotAIConfig->sightDistance))
+        if (HasManyPlayersNearby(10, 40))
         {
             return true;
         }
@@ -4289,11 +4313,7 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
     {
         return false;
     }
-    if (sPlayerbotAIConfig->botActiveAlone >= 100 && !sPlayerbotAIConfig->botActiveAloneSmartScale)
-    {
-        return true;
-    }
-
+    
     // #######################################################################################
     // All mandatory conditations are checked to be active or not, from here the remaining
     // situations are usable for scaling when enabled.
@@ -5481,10 +5501,10 @@ bool PlayerbotAI::CanMove()
     if (IsInVehicle() && !IsInVehicle(true))
         return false;
 
-    if (bot->isFrozen() || bot->IsPolymorphed() || (bot->isDead() && !bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)) ||
-        bot->IsBeingTeleported() || bot->isInRoots() || bot->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION) ||
-        bot->HasAuraType(SPELL_AURA_MOD_CONFUSE) || bot->IsCharmed() || bot->HasAuraType(SPELL_AURA_MOD_STUN) ||
-        bot->HasUnitState(UNIT_STATE_IN_FLIGHT) || bot->HasUnitState(UNIT_STATE_LOST_CONTROL))
+    if (bot->isFrozen() || bot->IsPolymorphed() || (bot->isDead() && !bot->HasPlayerFlag(PLAYER_FLAGS_GHOST)) ||
+        bot->IsBeingTeleported() || bot->HasRootAura() || bot->HasSpiritOfRedemptionAura() ||
+        bot->HasConfuseAura() || bot->IsCharmed() || bot->HasStunAura() ||
+        bot->IsInFlight() || bot->HasUnitState(UNIT_STATE_LOST_CONTROL))
         return false;
 
     return bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != FLIGHT_MOTION_TYPE;

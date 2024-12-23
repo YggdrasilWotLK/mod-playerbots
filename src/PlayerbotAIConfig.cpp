@@ -399,15 +399,19 @@ bool PlayerbotAIConfig::Initialize()
 
     worldBuffs.clear();
 
+    LOG_INFO("playerbots", "Loading Worldbuff...");
     for (uint32 factionId = 0; factionId < 3; factionId++)
     {
         for (uint32 classId = 0; classId < MAX_CLASSES; classId++)
         {
-            for (uint32 minLevel = 0; minLevel < MAX_LEVEL; minLevel++)
+            for (uint32 specId = 0; specId < MAX_SPECNO; specId++)
             {
-                for (uint32 maxLevel = 0; maxLevel < MAX_LEVEL; maxLevel++)
+                for (uint32 minLevel = 0; minLevel < MAX_LEVEL; minLevel++)
                 {
-                    loadWorldBuf(factionId, classId, minLevel, maxLevel);
+                    for (uint32 maxLevel = 0; maxLevel < MAX_LEVEL; maxLevel++)
+                    {
+                        loadWorldBuf(factionId, classId, specId, minLevel, maxLevel);
+                    }
                 }
             }
         }
@@ -459,12 +463,18 @@ bool PlayerbotAIConfig::Initialize()
     addClassAccountPoolSize = sConfigMgr->GetOption<int32>("AiPlayerbot.AddClassAccountPoolSize", 50);
     maintenanceCommand = sConfigMgr->GetOption<int32>("AiPlayerbot.MaintenanceCommand", 1);
     autoGearCommand = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearCommand", 1);
+    autoGearCommandAltBots = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearCommandAltBots", 1);
     autoGearQualityLimit = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearQualityLimit", 3);
     autoGearScoreLimit = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearScoreLimit", 0);
 
     playerbotsXPrate = sConfigMgr->GetOption<int32>("AiPlayerbot.KillXPRate", 1);
     disableDeathKnightLogin = sConfigMgr->GetOption<bool>("AiPlayerbot.DisableDeathKnightLogin", 0);
     botActiveAlone = sConfigMgr->GetOption<int32>("AiPlayerbot.BotActiveAlone", 100);
+    BotActiveAloneForceWhenInRadius = sConfigMgr->GetOption<uint32>("AiPlayerbot.BotActiveAloneForceWhenInRadius", 150);
+    BotActiveAloneForceWhenInZone = sConfigMgr->GetOption<bool>("AiPlayerbot.BotActiveAloneForceWhenInZone", 1);
+    BotActiveAloneForceWhenInMap = sConfigMgr->GetOption<bool>("AiPlayerbot.BotActiveAloneForceWhenInMap", 0);
+    BotActiveAloneForceWhenIsFriend = sConfigMgr->GetOption<bool>("AiPlayerbot.BotActiveAloneForceWhenIsFriend", 1);
+    BotActiveAloneForceWhenInGuild = sConfigMgr->GetOption<bool>("AiPlayerbot.BotActiveAloneForceWhenInGuild", 1);
     botActiveAloneSmartScale = sConfigMgr->GetOption<bool>("AiPlayerbot.botActiveAloneSmartScale", 1);
     botActiveAloneSmartScaleWhenMinLevel =
         sConfigMgr->GetOption<uint32>("AiPlayerbot.botActiveAloneSmartScaleWhenMinLevel", 1);
@@ -491,13 +501,15 @@ bool PlayerbotAIConfig::Initialize()
     twoRoundsGearInit = sConfigMgr->GetOption<bool>("AiPlayerbot.TwoRoundsGearInit", false);
     syncQuestWithPlayer = sConfigMgr->GetOption<bool>("AiPlayerbot.SyncQuestWithPlayer", true);
     syncQuestForPlayer = sConfigMgr->GetOption<bool>("AiPlayerbot.SyncQuestForPlayer", false);
+    dropObsoleteQuests = sConfigMgr->GetOption<bool>("AiPlayerbot.DropObsoleteQuests", true);
     autoTrainSpells = sConfigMgr->GetOption<std::string>("AiPlayerbot.AutoTrainSpells", "yes");
     autoPickTalents = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoPickTalents", true);
     autoUpgradeEquip = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoUpgradeEquip", false);
     autoLearnTrainerSpells = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoLearnTrainerSpells", true);
     autoLearnQuestSpells = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoLearnQuestSpells", false);
     autoTeleportForLevel = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoTeleportForLevel", false);
-    autoDoQuests = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoDoQuests", false);
+    autoDoQuests = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoDoQuests", true);
+    enableNewRpgStrategy = sConfigMgr->GetOption<bool>("AiPlayerbot.EnableNewRpgStrategy", false);
     syncLevelWithPlayers = sConfigMgr->GetOption<bool>("AiPlayerbot.SyncLevelWithPlayers", false);
     freeFood = sConfigMgr->GetOption<bool>("AiPlayerbot.FreeFood", true);
     randomBotGroupNearby = sConfigMgr->GetOption<bool>("AiPlayerbot.RandomBotGroupNearby", true);
@@ -559,7 +571,7 @@ bool PlayerbotAIConfig::IsInRandomQuestItemList(uint32 id)
 
 bool PlayerbotAIConfig::IsPvpProhibited(uint32 zoneId, uint32 areaId)
 {
-    return IsInPvpProhibitedZone(zoneId) || IsInPvpProhibitedArea(areaId);
+    return IsInPvpProhibitedZone(zoneId) || IsInPvpProhibitedArea(areaId) || IsInPvpProhibitedZone(areaId);
 }
 
 bool PlayerbotAIConfig::IsInPvpProhibitedZone(uint32 id)
@@ -644,36 +656,50 @@ void PlayerbotAIConfig::log(std::string const fileName, char const* str, ...)
     fflush(stdout);
 }
 
-void PlayerbotAIConfig::loadWorldBuf(uint32 factionId1, uint32 classId1, uint32 minLevel1, uint32 maxLevel1)
+void PlayerbotAIConfig::loadWorldBuf(uint32 factionId1, uint32 classId1, uint32 specId1, uint32 minLevel1, uint32 maxLevel1)
 {
     std::vector<uint32> buffs;
 
     std::ostringstream os;
-    os << "AiPlayerbot.WorldBuff." << factionId1 << "." << classId1 << "." << minLevel1 << "." << maxLevel1;
+    os << "AiPlayerbot.WorldBuff." << factionId1 << "." << classId1 << "." << specId1 << "." << minLevel1 << "." << maxLevel1;
 
     LoadList<std::vector<uint32>>(sConfigMgr->GetOption<std::string>(os.str().c_str(), "", false), buffs);
 
     for (auto buff : buffs)
     {
-        worldBuff wb = {buff, factionId1, classId1, minLevel1, maxLevel1};
+        worldBuff wb = {buff, factionId1, classId1, specId1, minLevel1, maxLevel1};
         worldBuffs.push_back(wb);
     }
 
     if (maxLevel1 == 0)
     {
         std::ostringstream os;
-        os << "AiPlayerbot.WorldBuff." << factionId1 << "." << classId1 << "." << minLevel1;
+        os << "AiPlayerbot.WorldBuff." << factionId1 << "." << classId1 << "." << specId1 << "." << minLevel1;
 
         LoadList<std::vector<uint32>>(sConfigMgr->GetOption<std::string>(os.str().c_str(), "", false), buffs);
 
         for (auto buff : buffs)
         {
-            worldBuff wb = {buff, factionId1, classId1, minLevel1, maxLevel1};
+            worldBuff wb = {buff, factionId1, classId1, specId1, minLevel1, maxLevel1};
             worldBuffs.push_back(wb);
         }
     }
 
     if (maxLevel1 == 0 && minLevel1 == 0)
+    {
+        std::ostringstream os;
+        os << "AiPlayerbot.WorldBuff." << factionId1 << "." << factionId1 << "." << classId1 << "." << specId1;
+
+        LoadList<std::vector<uint32>>(sConfigMgr->GetOption<std::string>(os.str().c_str(), "", false), buffs);
+
+        for (auto buff : buffs)
+        {
+            worldBuff wb = {buff, factionId1, classId1, specId1, minLevel1, maxLevel1};
+            worldBuffs.push_back(wb);
+        }
+    }
+
+    if (maxLevel1 == 0 && minLevel1 == 0 && specId1 == 0)
     {
         std::ostringstream os;
         os << "AiPlayerbot.WorldBuff." << factionId1 << "." << factionId1 << "." << classId1;
@@ -682,12 +708,12 @@ void PlayerbotAIConfig::loadWorldBuf(uint32 factionId1, uint32 classId1, uint32 
 
         for (auto buff : buffs)
         {
-            worldBuff wb = {buff, factionId1, classId1, minLevel1, maxLevel1};
+            worldBuff wb = {buff, factionId1, classId1, specId1, minLevel1, maxLevel1};
             worldBuffs.push_back(wb);
         }
     }
 
-    if (classId1 == 0 && maxLevel1 == 0 && minLevel1 == 0)
+    if (classId1 == 0 && maxLevel1 == 0 && minLevel1 == 0 && specId1 == 0)
     {
         std::ostringstream os;
         os << "AiPlayerbot.WorldBuff." << factionId1;
@@ -696,12 +722,12 @@ void PlayerbotAIConfig::loadWorldBuf(uint32 factionId1, uint32 classId1, uint32 
 
         for (auto buff : buffs)
         {
-            worldBuff wb = {buff, factionId1, classId1, minLevel1, maxLevel1};
+            worldBuff wb = {buff, factionId1, classId1, specId1, minLevel1, maxLevel1};
             worldBuffs.push_back(wb);
         }
     }
 
-    if (factionId1 == 0 && classId1 == 0 && maxLevel1 == 0 && minLevel1 == 0)
+    if (factionId1 == 0 && classId1 == 0 && maxLevel1 == 0 && minLevel1 == 0 && specId1 == 0)
     {
         std::ostringstream os;
         os << "AiPlayerbot.WorldBuff";
@@ -710,7 +736,7 @@ void PlayerbotAIConfig::loadWorldBuf(uint32 factionId1, uint32 classId1, uint32 
 
         for (auto buff : buffs)
         {
-            worldBuff wb = {buff, factionId1, classId1, minLevel1, maxLevel1};
+            worldBuff wb = {buff, factionId1, classId1, specId1, minLevel1, maxLevel1};
             worldBuffs.push_back(wb);
         }
     }
