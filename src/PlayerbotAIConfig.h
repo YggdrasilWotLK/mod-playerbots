@@ -262,6 +262,8 @@ public:
     bool randomBotFixedLevel;
     bool disableRandomLevels;
     uint32 playerbotsXPrate;
+    uint32 randomBotAllianceRatio;
+    uint32 randomBotHordeRatio;
     bool disableDeathKnightLogin;
     uint32 botActiveAlone;
     uint32 BotActiveAloneForceWhenInRadius;
@@ -270,6 +272,8 @@ public:
     bool BotActiveAloneForceWhenIsFriend;
     bool BotActiveAloneForceWhenInGuild;
     bool botActiveAloneSmartScale;
+    uint32 botActiveAloneSmartScaleDiffLimitfloor;
+    uint32 botActiveAloneSmartScaleDiffLimitCeiling;
     uint32 botActiveAloneSmartScaleWhenMinLevel;
     uint32 botActiveAloneSmartScaleWhenMaxLevel;
 
