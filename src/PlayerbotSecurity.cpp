@@ -274,7 +274,7 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
             }
             break;
         case PLAYERBOT_SECURITY_INVITE:
-            out << "Invite me to your group first";
+            //out << "Invite me to your group first"; // absolutely useless feedback
             break;
         default:
             out << "I can't do that";
