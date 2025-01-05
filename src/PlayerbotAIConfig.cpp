@@ -398,17 +398,19 @@ bool PlayerbotAIConfig::Initialize()
                                              allowedLogFiles);
 
     worldBuffs.clear();
-
     LOG_INFO("playerbots", "Loading Worldbuff...");
+    const uint32 LEVEL_GRANULARITY = 5;
+    const uint32 MIN_LEVEL_GAP = 10;
+
     for (uint32 factionId = 0; factionId < 3; factionId++)
     {
         for (uint32 classId = 0; classId < MAX_CLASSES; classId++)
         {
             for (uint32 specId = 0; specId < MAX_SPECNO; specId++)
             {
-                for (uint32 minLevel = 0; minLevel < MAX_LEVEL; minLevel++)
+                for (uint32 minLevel = 1; minLevel < MAX_LEVEL; minLevel = ((minLevel + LEVEL_GRANULARITY) / LEVEL_GRANULARITY) * LEVEL_GRANULARITY)
                 {
-                    for (uint32 maxLevel = 0; maxLevel < MAX_LEVEL; maxLevel++)
+                    for (uint32 maxLevel = minLevel + MIN_LEVEL_GAP; maxLevel < MAX_LEVEL; maxLevel = ((maxLevel + LEVEL_GRANULARITY) / LEVEL_GRANULARITY) * LEVEL_GRANULARITY)
                     {
                         loadWorldBuf(factionId, classId, specId, minLevel, maxLevel);
                     }
