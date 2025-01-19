@@ -14,14 +14,13 @@
 
 bool QuestAction::Execute(Event event)
 {
+    LOG_DEBUG("playerbots", "Executing QuestAction");
     if (!bot || !botAI) {
-        LOG_INFO("playerbots", "QuestAction: Failed - bot or botAI is null");
+        LOG_DEBUG("playerbots", "QuestAction: Failed - bot or botAI is null");
         return false;
     }
-
     ObjectGuid guid = event.getObject();
     Player* master = GetMaster();
-
     if (!guid)
     {
         if (master && master->IsInWorld())
@@ -29,26 +28,35 @@ bool QuestAction::Execute(Event event)
         else if (bot->IsInWorld())
             guid = bot->GetTarget();
     }
-
     if (guid)
         return ProcessQuests(guid);
-
     bool result = false;
-
+    
     // Safely get and process NPCs
     try {
-        GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
         if (!bot || !botAI) {
-            LOG_INFO("playerbots", "{}: QuestAction failed - bot/botAI null after getting nearest NPCs", bot ? bot->GetName() : "Unknown");
+            LOG_DEBUG("playerbots", "{}: QuestAction failed - bot/botAI null", 
+                bot ? bot->GetName() : "Unknown");
             return false;
         }
-
+        auto* aiContext = botAI->GetAiObjectContext();
+        if (!aiContext) {
+            LOG_DEBUG("playerbots", "{}: QuestAction failed - AI context is null", 
+                bot->GetName());
+            return false;
+        }
+        auto value = aiContext->GetValue<GuidVector>("nearest npcs");
+        if (!value) {
+            LOG_DEBUG("playerbots", "{}: QuestAction failed - Could not get value for 'nearest npcs'", 
+                bot->GetName());
+            return false;
+        }
+        GuidVector npcs = value->Get();
+        
         for (const auto& npc : npcs)
         {
-            if (!bot || !botAI) {
-                LOG_INFO("playerbots", "{}: QuestAction failed - bot/botAI null during NPC processing", bot ? bot->GetName() : "Unknown");
-                return false;
-            }
+            if (!bot || !botAI) 
+                break;
             Unit* unit = botAI->GetUnit(npc);
             if (unit && unit->IsInWorld() && bot->IsInWorld() && 
                 bot->GetDistance(unit) <= INTERACTION_DISTANCE)
@@ -56,47 +64,58 @@ bool QuestAction::Execute(Event event)
                 result |= ProcessQuests(unit);
             }
         }
-    } catch (std::bad_alloc& e) {
-        LOG_INFO("playerbots", "{}: QuestAction failed - memory allocation error during NPC processing: {}", bot ? bot->GetName() : "Unknown", e.what());
+    } catch (const std::bad_alloc& e) {
+        LOG_DEBUG("playerbots", "{}: QuestAction failed - memory allocation error during NPC processing: {}", 
+            bot ? bot->GetName() : "Unknown", e.what());
         return false;
-    } catch (std::exception& e) {
-        LOG_INFO("playerbots", "{}: QuestAction failed - error during NPC processing: {}", bot ? bot->GetName() : "Unknown", e.what());
+    } catch (const std::exception& e) {
+        LOG_DEBUG("playerbots", "{}: QuestAction failed - error during NPC processing: {}", 
+            bot ? bot->GetName() : "Unknown", e.what());
         return false;
     }
 
     // Safely get and process game objects
     try {
         if (!bot || !botAI) {
-            LOG_INFO("playerbots", "{}: QuestAction failed - bot/botAI null before getting game objects", bot ? bot->GetName() : "Unknown");
+            LOG_DEBUG("playerbots", "{}: QuestAction failed - bot/botAI null", 
+                bot ? bot->GetName() : "Unknown");
             return false;
         }
-
-        // Store AI_VALUE result in a temporary first to check if it's valid
-        auto gos = AI_VALUE(std::list<ObjectGuid>, "nearest game objects");
+        auto* aiContext = botAI->GetAiObjectContext();
+        if (!aiContext) {
+            LOG_DEBUG("playerbots", "{}: QuestAction failed - AI context is null", 
+                bot->GetName());
+            return false;
+        }
+        auto value = aiContext->GetValue<std::list<ObjectGuid>>("nearest game objects");
+        if (!value) {
+            LOG_DEBUG("playerbots", "{}: QuestAction failed - Could not get value for 'nearest game objects'", 
+                bot->GetName());
+            return false;
+        }
+        std::list<ObjectGuid> gos = value->Get();
         
-        if (!bot || !botAI) {
-            LOG_INFO("playerbots", "{}: QuestAction failed - bot/botAI null after getting game objects", bot ? bot->GetName() : "Unknown");
-            return false;
-        }
-
-        for (const auto& go : gos)
-        {
-            if (!bot || !botAI) break;
+        for (const auto& go : gos) {
+            if (!bot || !botAI) 
+                break;
             GameObject* gameobj = botAI->GetGameObject(go);
             if (gameobj && gameobj->IsInWorld() && bot->IsInWorld() && 
-                bot->GetDistance(gameobj) <= INTERACTION_DISTANCE)
+                bot->GetDistance(gameobj) <= INTERACTION_DISTANCE) 
             {
                 result |= ProcessQuests(gameobj);
             }
         }
-    } catch (std::bad_alloc& e) {
-        LOG_INFO("playerbots", "{}: QuestAction failed - memory allocation error during gameobject processing: {}", bot ? bot->GetName() : "Unknown", e.what());
+    } catch (const std::bad_alloc& e) {
+        LOG_DEBUG("playerbots", "{}: QuestAction failed - memory allocation error: {}", 
+            bot ? bot->GetName() : "Unknown", e.what());
         return false;
-    } catch (std::exception& e) {
-        LOG_INFO("playerbots", "{}: QuestAction failed - error during gameobject processing: {}", bot ? bot->GetName() : "Unknown", e.what());
+    } catch (const std::exception& e) {
+        LOG_DEBUG("playerbots", "{}: QuestAction failed with error: {}", 
+            bot ? bot->GetName() : "Unknown", e.what());
         return false;
     }
 
+    LOG_DEBUG("playerbots", "Passing valid result");
     return result;
 }
 
