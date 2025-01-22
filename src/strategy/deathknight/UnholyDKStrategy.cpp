@@ -2,6 +2,9 @@
  * Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license, you may redistribute it and/or modify it under version 2 of the License, or (at your option), any later version.
  */
 
+#include "GenericDKStrategy.h"
+#include "DKAiObjectContext.h"
+
 #include "UnholyDKStrategy.h"
 
 #include "Playerbots.h"
@@ -89,6 +92,10 @@ NextAction** UnholyDKStrategy::getDefaultActions()
 void UnholyDKStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericDKStrategy::InitTriggers(triggers);
+    
+    triggers.push_back(
+        new TriggerNode("no pet", NextAction::array(0, new NextAction("raise dead", ACTION_NORMAL + 1), nullptr)));
+        
     triggers.push_back(new TriggerNode(
         "death and decay cooldown", NextAction::array(0, 
             new NextAction("ghoul frenzy", ACTION_DEFAULT + 0.9f),
@@ -125,8 +132,7 @@ void UnholyDKStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 
 
     // triggers.push_back(new TriggerNode("often", NextAction::array(0, new NextAction(, ACTION_NORMAL + 2), nullptr)));
-    triggers.push_back(new TriggerNode(
-        "army of the dead", NextAction::array(0, new NextAction("army of the dead", ACTION_HIGH + 6), nullptr)));
+    //triggers.push_back(new TriggerNode("army of the dead", NextAction::array(0, new NextAction("army of the dead", ACTION_HIGH + 6), nullptr)));
     triggers.push_back(
         new TriggerNode("bone shield", NextAction::array(0, new NextAction("bone shield", ACTION_HIGH + 1), nullptr)));
 }

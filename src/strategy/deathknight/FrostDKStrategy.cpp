@@ -106,8 +106,7 @@ void FrostDKStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode(
         "high blood rune", NextAction::array(0, new NextAction("blood strike", ACTION_DEFAULT + 0.2f), nullptr)));
 
-    triggers.push_back(new TriggerNode(
-        "army of the dead", NextAction::array(0, new NextAction("army of the dead", ACTION_HIGH + 6), nullptr)));
+    //triggers.push_back(new TriggerNode("army of the dead", NextAction::array(0, new NextAction("army of the dead", ACTION_HIGH + 6), nullptr)));
 
     triggers.push_back(
         new TriggerNode("icy touch", NextAction::array(0, new NextAction("icy touch", ACTION_HIGH + 2), nullptr)));

@@ -170,8 +170,6 @@ void GenericDKStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     // NextAction("death coil", ACTION_NORMAL + 3), nullptr))); triggers.push_back(new TriggerNode("critical aoe heal",
     // NextAction::array(0, new NextAction("anti magic zone", ACTION_EMERGENCY + 1), nullptr)));
     triggers.push_back(
-        new TriggerNode("no pet", NextAction::array(0, new NextAction("raise dead", ACTION_NORMAL + 5), nullptr)));
-    triggers.push_back(
         new TriggerNode("mind freeze", NextAction::array(0, new NextAction("mind freeze", ACTION_HIGH + 1), nullptr)));
     triggers.push_back(
         new TriggerNode("mind freeze on enemy healer",
