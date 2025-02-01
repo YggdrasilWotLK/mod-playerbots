@@ -25,6 +25,8 @@ public:
 
     static LootStrategy* normal;
     static LootStrategy* gray;
+    static LootStrategy* quest;
+    static LootStrategy* none;
     static LootStrategy* all;
     static LootStrategy* disenchant;
     static LootStrategy* instance(std::string const name);

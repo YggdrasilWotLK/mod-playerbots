@@ -35,6 +35,28 @@ public:
     std::string const GetName() override { return "gray"; }
 };
 
+class QuestLootStrategy : public NormalLootStrategy
+{
+public:
+    bool CanLoot(ItemTemplate const* proto, AiObjectContext* context) override
+    {
+        return NormalLootStrategy::CanLoot(proto, context) || proto->Class == ITEM_CLASS_CONTAINER;
+    }
+
+    std::string const GetName() override { return "quest"; }
+};
+
+class NoneLootStrategy : public NormalLootStrategy
+{
+public:
+    bool CanLoot(ItemTemplate const* proto, AiObjectContext* context) override
+    {
+        return NormalLootStrategy::CanLoot(proto, context) || proto->Quality == ITEM_QUALITY_ARTIFACT; // There are no lootable artifact items
+    }
+
+    std::string const GetName() override { return "none"; }
+};
+
 class DisenchantLootStrategy : public NormalLootStrategy
 {
 public:
@@ -63,6 +85,8 @@ LootStrategyValue::~LootStrategyValue()
 
 LootStrategy* LootStrategyValue::normal = new NormalLootStrategy();
 LootStrategy* LootStrategyValue::gray = new GrayLootStrategy();
+LootStrategy* LootStrategyValue::none = new NoneLootStrategy();
+LootStrategy* LootStrategyValue::quest = new QuestLootStrategy();
 LootStrategy* LootStrategyValue::disenchant = new DisenchantLootStrategy();
 LootStrategy* LootStrategyValue::all = new AllLootStrategy();
 
@@ -73,6 +97,12 @@ LootStrategy* LootStrategyValue::instance(std::string const strategy)
 
     if (strategy == "g" || strategy == "gray")
         return gray;
+    
+    if (strategy == "q" || strategy == "quest")
+        return quest;
+    
+    if (strategy == "n" || strategy == "none")
+        return none;
 
     if (strategy == "d" || strategy == "e" || strategy == "disenchant" || strategy == "enchant")
         return disenchant;
