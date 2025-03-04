@@ -74,12 +74,16 @@ bool QuestAction::Execute(Event event)
         return false;
     }
 
-    // Safely get and process game objects
-    try {
-        if (!bot || !botAI) {
-            LOG_DEBUG("playerbots", "{}: QuestAction failed - bot/botAI null", 
-                bot ? bot->GetName() : "Unknown");
-            return false;
+
+    // Checks the nearest game objects
+    GuidVector gos = AI_VALUE(GuidVector, "nearest game objects");
+    for (const auto& go : gos)
+    {
+        GameObject* gameobj = botAI->GetGameObject(go);
+        if (gameobj && bot->GetDistance(gameobj) <= INTERACTION_DISTANCE)
+        {
+            result |= ProcessQuests(gameobj);
+
         }
         auto* aiContext = botAI->GetAiObjectContext();
         if (!aiContext) {
