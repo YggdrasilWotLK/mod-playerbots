@@ -640,9 +640,6 @@ std::string const PlayerbotHolder::ProcessBotCommand(std::string const cmd, Obje
         if (ObjectAccessor::FindPlayer(guid))
             return "Player already logged in.";
 
-        if (!sPlayerbotAIConfig->allowPlayerBots)
-            return "You cannot login another player's character as bot.";
-
         AddPlayerBot(guid, masterAccountId);
         return "Login successful.";
     }
