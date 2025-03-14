@@ -85,7 +85,7 @@ public:
         creators["range"] = &ChatActionContext::range;
         creators["stats"] = &ChatActionContext::stats;
         creators["quests"] = &ChatActionContext::quests;
-        creators["leave"] = &ChatActionContext::leave;
+        //creators["leave"] = &ChatActionContext::leave;
         creators["reputation"] = &ChatActionContext::reputation;
         creators["log"] = &ChatActionContext::log;
         creators["los"] = &ChatActionContext::los;
