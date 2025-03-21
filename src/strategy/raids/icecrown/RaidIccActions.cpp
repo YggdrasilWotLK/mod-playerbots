@@ -3256,7 +3256,10 @@ bool IccLichKingAddsAction::Execute(Event event)
 		}
 	}
     
-    if (boss && !(boss->HasAura(72259)) && !(boss->HasAura(68981))) // If boss is in p2, check if bot has been thrown off platform
+    bool hasWinterAura = boss->HasAura(72259) || boss->HasAura(74273) || boss->HasAura(74274) || boss->HasAura(74275);
+    bool hasWinter2Aura = boss->HasAura(68981) || boss->HasAura(74270) || boss->HasAura(74271) || boss->HasAura(74272);
+	
+	if (boss && !hasWinterAura && !hasWinter2Aura) // If boss is in p2, check if bot has been thrown off platform
     {
        float dx = bot->GetPositionX() - 503.0f;
        float dy = bot->GetPositionY() - (-2124.0f);
