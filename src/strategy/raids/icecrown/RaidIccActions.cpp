@@ -3265,7 +3265,7 @@ bool IccLichKingAddsAction::Execute(Event event)
        float dy = bot->GetPositionY() - (-2124.0f);
        float distance = sqrt(dx*dx + dy*dy); // Calculate distance from the center of the platform
        
-       if (distance > 52.0f && distance < 70.0f && bot->GetPositionZ() > 780) // If bot has fallen off edge, distance is over 52
+       if (distance > 52.0f && distance < 70.0f && bot->GetPositionZ() > 844) // If bot has fallen off edge, distance is over 52
        {
            bot->AddAura(30440, bot); // Apply random 30 sec aura to track that we've initiated a jump
            return JumpTo(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), 740.01f); // Start jumping to the abyss
