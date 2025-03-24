@@ -11,7 +11,7 @@ NextAction** MaintenanceStrategy::getDefaultActions() { return nullptr; }
 
 void MaintenanceStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
-    triggers.push_back(new TriggerNode("random", NextAction::array(0, new NextAction("clean quest log", 6.0f), nullptr)));
+    //triggers.push_back(new TriggerNode("random", NextAction::array(0, new NextAction("clean quest log", 6.0f), nullptr)));
     triggers.push_back(new TriggerNode("random", NextAction::array(0, new NextAction("use random recipe", 1.0f), nullptr)));
     triggers.push_back(new TriggerNode("random", NextAction::array(0, new NextAction("disenchant random item", 1.0f), nullptr)));
     triggers.push_back(new TriggerNode("random", NextAction::array(0, new NextAction("enchant random item", 1.0f), nullptr)));
