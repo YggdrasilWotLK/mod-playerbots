@@ -35,7 +35,7 @@ static const std::unordered_set<std::string> noReplyMsgs = {
     "items",
     "join",
     "repair",
-    "summon",
+    //"summon",
     "nc ?",
     "co ?",
     "de ?",
