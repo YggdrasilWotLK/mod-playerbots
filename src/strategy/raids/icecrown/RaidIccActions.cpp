@@ -163,6 +163,11 @@ bool IccAddsLadyDeathwhisperAction::Execute(Event event)
                       false, false, false, MovementPriority::MOVEMENT_COMBAT);
     }
 
+	// Temp solution to bots falling through stairs/floors etc. when repositioning for LDW adds
+    if (bot->GetPositionZ() < 49.0f)
+        return bot->TeleportTo(bot->GetMapId(), bot->GetPositionX(),
+                          bot->GetPositionY(), 49.48f, bot->GetOrientation());
+						  
     if (botAI->IsMainTank(bot) || botAI->IsHeal(bot))
         return false;
 
