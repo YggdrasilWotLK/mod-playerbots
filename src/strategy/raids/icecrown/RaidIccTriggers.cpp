@@ -594,8 +594,11 @@ bool IccValithriaPortalTrigger::IsActive()
     if (!boss) 
         return false;
 
-    //for gruop position for non healers
-    if(!botAI->IsHeal(bot) && (bot->GetDistance(ICC_VDW_GROUP_POSITION) > 35.0f))
+    //for group position for non healers
+    if(!botAI->IsHeal(bot) && (bot->GetDistance(ICC_VDW_GROUP_POSITION) > 35.0f) && bot->IsInCombat() && (bot->GetPositionX() <= 4295.0f))
+        return true;
+	
+    if(!botAI->IsHeal(bot) && (bot->GetDistance(ICC_VDW_GROUP_POSITION) > 35.0f) && !bot->IsInCombat() && (bot->GetPositionX() <= 4255.0f))
         return true;
     
     // Only healers should use portals
