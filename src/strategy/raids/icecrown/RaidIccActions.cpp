@@ -419,7 +419,7 @@ bool IccGunshipTeleportAllyAction::Execute(Event event)
     if (!(boss->HasUnitState(UNIT_STATE_CASTING) && boss->FindCurrentSpellBySpellId(69705)))
     {
         // If not casting and we're too far from waiting position, go there
-        if (bot->GetExactDist2d(ICC_GUNSHIP_TELEPORT_ALLY2) > 45.0f)
+        if (bot->GetExactDist2d(ICC_GUNSHIP_TELEPORT_ALLY2) > 45.0f && bot->GetPositionZ() > 210.0f)
             return bot->TeleportTo(bot->GetMapId(), ICC_GUNSHIP_TELEPORT_ALLY2.GetPositionX(),
                           ICC_GUNSHIP_TELEPORT_ALLY2.GetPositionY(), ICC_GUNSHIP_TELEPORT_ALLY2.GetPositionZ(), bot->GetOrientation());
         return false;
@@ -434,7 +434,7 @@ bool IccGunshipTeleportAllyAction::Execute(Event event)
     if (bot->GetTarget() != boss->GetGUID())
         return false;
         
-    if (!botAI->IsAssistTank(bot) && bot->GetExactDist2d(ICC_GUNSHIP_TELEPORT_ALLY) > 15.0f)
+    if (!botAI->IsAssistTank(bot) && bot->GetExactDist2d(ICC_GUNSHIP_TELEPORT_ALLY) > 15.0f && bot->GetPositionZ() > 210.0f)
         return bot->TeleportTo(bot->GetMapId(), ICC_GUNSHIP_TELEPORT_ALLY.GetPositionX(),
                       ICC_GUNSHIP_TELEPORT_ALLY.GetPositionY(), ICC_GUNSHIP_TELEPORT_ALLY.GetPositionZ(), bot->GetOrientation());
     
@@ -451,7 +451,7 @@ bool IccGunshipTeleportHordeAction::Execute(Event event)
     if (!(boss->HasUnitState(UNIT_STATE_CASTING) && boss->FindCurrentSpellBySpellId(69705)))
     {
         // If not casting and we're too far from waiting position, go there
-        if (bot->GetExactDist2d(ICC_GUNSHIP_TELEPORT_HORDE2) > 45.0f)
+        if (bot->GetExactDist2d(ICC_GUNSHIP_TELEPORT_HORDE2) > 45.0f && bot->GetPositionZ() > 210.0f)
             return bot->TeleportTo(bot->GetMapId(), ICC_GUNSHIP_TELEPORT_HORDE2.GetPositionX(),
                           ICC_GUNSHIP_TELEPORT_HORDE2.GetPositionY(), ICC_GUNSHIP_TELEPORT_HORDE2.GetPositionZ(), bot->GetOrientation());
         return false;
@@ -466,7 +466,7 @@ bool IccGunshipTeleportHordeAction::Execute(Event event)
     if (bot->GetTarget() != boss->GetGUID())
         return false;
 
-    if (!botAI->IsAssistTank(bot) && bot->GetExactDist2d(ICC_GUNSHIP_TELEPORT_HORDE) > 15.0f)
+    if (!botAI->IsAssistTank(bot) && bot->GetExactDist2d(ICC_GUNSHIP_TELEPORT_HORDE) > 15.0f && bot->GetPositionZ() > 210.0f)
         return bot->TeleportTo(bot->GetMapId(), ICC_GUNSHIP_TELEPORT_HORDE.GetPositionX(),
                       ICC_GUNSHIP_TELEPORT_HORDE.GetPositionY(), ICC_GUNSHIP_TELEPORT_HORDE.GetPositionZ(), bot->GetOrientation());
     
