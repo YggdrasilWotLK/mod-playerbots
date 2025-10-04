@@ -59,3 +59,45 @@ bool AvoidSkadiWhirlwindAction::Execute(Event event)
 
     return false;
 }
+
+bool AvoidYmironBaneAction::Execute(Event event)
+{
+    Creature* boss = bot->FindNearestCreature(26861, 100.0f);
+    if (!boss) { return false; }
+
+    Pet* pet = bot->GetPet();
+    if (pet)
+    {
+        pet->AttackStop();
+    }
+
+    switch (bot->getClass())
+    {
+        case CLASS_WARRIOR:
+            if (botAI->IsTank(bot) && bot->GetVictim() == boss && botAI->CanCastSpell("Shield Slam", boss))
+            {
+                return botAI->CastSpell(30356, boss);
+            }
+            break;
+        case CLASS_MAGE:
+            return botAI->CastSpell(30449, boss);
+        case CLASS_SHAMAN:
+            return botAI->CastSpell(8012, boss);
+    }
+
+    if (botAI->IsTank(bot) && bot->GetVictim() == boss)
+    {
+        return false;
+    }
+
+    float distance = bot->GetExactDist2d(boss->GetPosition());
+    float radius = 10.0f;
+    float distanceExtra = 2.0f;
+
+    if (distance < radius + distanceExtra)
+    {
+        return MoveAway(boss, radius + distanceExtra - distance);
+    }
+
+    return false;
+}

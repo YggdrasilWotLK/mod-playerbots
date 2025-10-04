@@ -21,4 +21,11 @@ public:
     bool Execute(Event event) override;
 };
 
+class AvoidYmironBaneAction : public MovementAction
+{
+public:
+    AvoidYmironBaneAction(PlayerbotAI* ai) : MovementAction(ai, "avoid ymiron bane") {}
+    bool Execute(Event event) override;
+};
+
 #endif
