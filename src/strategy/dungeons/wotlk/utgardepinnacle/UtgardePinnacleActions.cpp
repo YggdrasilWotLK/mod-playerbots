@@ -70,7 +70,7 @@ bool AvoidYmironBaneAction::Execute(Event event)
         switch (bot->getClass())
         {
             case CLASS_WARRIOR:
-                if (botAI->CanCastSpell("Shield Slam", boss))
+                if (botAI->CanCastSpell(30356, boss, true))
                     return botAI->CastSpell(30356, boss);
                 break;
             case CLASS_MAGE:
@@ -98,31 +98,15 @@ bool AvoidYmironBaneAction::Execute(Event event)
     float moveDistance = 10.0f;
     float targetX = botX + dirX * moveDistance;
     float targetY = botY + dirY * moveDistance;
+    float targetZ = 104.76f;
     
     float minX = 351.0f;
     float maxX = 434.0f;
     float minY = -342.0f;
     float maxY = -306.0f;
     
-    if (targetX < minX || targetX > maxX || targetY < minY || targetY > maxY)
-    {
-        float distToMinX = botX - minX;
-        float distToMaxX = maxX - botX;
-        float distToMinY = botY - minY;
-        float distToMaxY = maxY - botY;
-        
-        if (distToMinX < distToMaxX && distToMinX < distToMinY && distToMinX < distToMaxY)
-            targetX = minX;
-        else if (distToMaxX < distToMinY && distToMaxX < distToMaxY)
-            targetX = maxX;
-        else if (distToMinY < distToMaxY)
-            targetY = minY;
-        else
-            targetY = maxY;
-    }
-    
     targetX = std::max(minX, std::min(maxX, targetX));
     targetY = std::max(minY, std::min(maxY, targetY));
     
-    return MoveAway(boss, moveDistance);
+    return MoveTo(bot->GetMapId(), targetX, targetY, targetZ);
 }
