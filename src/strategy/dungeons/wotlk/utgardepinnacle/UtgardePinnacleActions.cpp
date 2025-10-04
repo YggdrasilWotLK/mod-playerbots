@@ -58,9 +58,6 @@ bool AvoidYmironBaneAction::Execute(Event event)
     if (!boss)
         return false;
 
-    if (boss->GetVictim() == bot)
-        return false;
-
     Pet* pet = bot->GetPet();
     if (pet)
         pet->AttackStop();
@@ -79,6 +76,9 @@ bool AvoidYmironBaneAction::Execute(Event event)
                 return botAI->CastSpell(8012, boss);
         }
     }
+	
+    if (boss->GetVictim() == bot)
+        return false;
 
     float botX = bot->GetPositionX();
     float botY = bot->GetPositionY();
