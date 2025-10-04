@@ -13,13 +13,12 @@ bool AvoidFreezingCloudAction::Execute(Event event)
         if (unit && unit->GetEntry() == NPC_BREATH_TRIGGER)
         {
             if (!closestTrigger || bot->GetExactDist2d(unit) < bot->GetExactDist2d(closestTrigger))
-            {
                 closestTrigger = unit;
-            }
         }
     }
 
-    if (!closestTrigger) { return false; }
+    if (!closestTrigger)
+        return false;
 
     float distance = bot->GetExactDist2d(closestTrigger->GetPosition());
     float radius = 3.0f;
@@ -28,10 +27,7 @@ bool AvoidFreezingCloudAction::Execute(Event event)
     float distanceExtra = 3.0f;
 
     if (distance < radius + distanceExtra - 1.0f)
-    {
-        // bot->Yell("MOVING", LANG_UNIVERSAL);
         return MoveAway(closestTrigger, radius + distanceExtra - distance);
-    }
 
     return false;
 }
@@ -39,7 +35,8 @@ bool AvoidFreezingCloudAction::Execute(Event event)
 bool AvoidSkadiWhirlwindAction::Execute(Event event)
 {
     Unit* boss = AI_VALUE2(Unit*, "find target", "skadi the ruthless");
-    if (!boss) { return false; }
+    if (!boss)
+        return false;
 
     float distance = bot->GetExactDist2d(boss->GetPosition());
     float radius = 5.0f;
@@ -48,12 +45,7 @@ bool AvoidSkadiWhirlwindAction::Execute(Event event)
     if (distance < radius + distanceExtra)
     {
         if (botAI->IsTank(bot))
-        {
-            // The boss chases tank during this, leads to jittery stutter-stepping
-            // by the tank if we don't pre-move additional range. 2*radius seems ok
             return MoveAway(boss, (2.0f * radius) + distanceExtra - distance);
-        }
-        // else
         return MoveAway(boss, radius + distanceExtra - distance);
     }
 
@@ -63,41 +55,74 @@ bool AvoidSkadiWhirlwindAction::Execute(Event event)
 bool AvoidYmironBaneAction::Execute(Event event)
 {
     Creature* boss = bot->FindNearestCreature(26861, 100.0f);
-    if (!boss) { return false; }
+    if (!boss)
+        return false;
+
+    if (boss->GetVictim() == bot)
+        return false;
 
     Pet* pet = bot->GetPet();
     if (pet)
-    {
         pet->AttackStop();
-    }
 
-    switch (bot->getClass())
+    if (boss->HasAura(SPELL_BANE))
     {
-        case CLASS_WARRIOR:
-            if (botAI->IsTank(bot) && bot->GetVictim() == boss && botAI->CanCastSpell("Shield Slam", boss))
-            {
-                return botAI->CastSpell(30356, boss);
-            }
-            break;
-        case CLASS_MAGE:
-            return botAI->CastSpell(30449, boss);
-        case CLASS_SHAMAN:
-            return botAI->CastSpell(8012, boss);
+        switch (bot->getClass())
+        {
+            case CLASS_WARRIOR:
+                if (botAI->CanCastSpell("Shield Slam", boss))
+                    return botAI->CastSpell(30356, boss);
+                break;
+            case CLASS_MAGE:
+                return botAI->CastSpell(30449, boss);
+            case CLASS_SHAMAN:
+                return botAI->CastSpell(8012, boss);
+        }
     }
 
-    if (botAI->IsTank(bot) && bot->GetVictim() == boss)
+    float botX = bot->GetPositionX();
+    float botY = bot->GetPositionY();
+    float bossX = boss->GetPositionX();
+    float bossY = boss->GetPositionY();
+    
+    float dirX = botX - bossX;
+    float dirY = botY - bossY;
+    float len = sqrt(dirX * dirX + dirY * dirY);
+    
+    if (len > 0)
     {
-        return false;
+        dirX /= len;
+        dirY /= len;
     }
-
-    float distance = bot->GetExactDist2d(boss->GetPosition());
-    float radius = 10.0f;
-    float distanceExtra = 2.0f;
-
-    if (distance < radius + distanceExtra)
+    
+    float moveDistance = 10.0f;
+    float targetX = botX + dirX * moveDistance;
+    float targetY = botY + dirY * moveDistance;
+    
+    float minX = 351.0f;
+    float maxX = 434.0f;
+    float minY = -342.0f;
+    float maxY = -306.0f;
+    
+    if (targetX < minX || targetX > maxX || targetY < minY || targetY > maxY)
     {
-        return MoveAway(boss, radius + distanceExtra - distance);
+        float distToMinX = botX - minX;
+        float distToMaxX = maxX - botX;
+        float distToMinY = botY - minY;
+        float distToMaxY = maxY - botY;
+        
+        if (distToMinX < distToMaxX && distToMinX < distToMinY && distToMinX < distToMaxY)
+            targetX = minX;
+        else if (distToMaxX < distToMinY && distToMaxX < distToMaxY)
+            targetX = maxX;
+        else if (distToMinY < distToMaxY)
+            targetY = minY;
+        else
+            targetY = maxY;
     }
-
-    return false;
+    
+    targetX = std::max(minX, std::min(maxX, targetX));
+    targetY = std::max(minY, std::min(maxY, targetY));
+    
+    return MoveAway(boss, moveDistance);
 }
